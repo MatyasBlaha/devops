@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Car {
+  id          Int      @id @default(autoincrement())
+  brand       String
+  model       String
+  year        Int
+  pricePerDay Float
+  status      String   @default("available")
+  category    String   @default("standard")
+  createdAt   DateTime @default(now())
+
+  reservations Reservation[]
+}
+
+model Customer {
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  email                String   @unique
+  phone                String?
+  driversLicenseNumber String
+  driversLicenseDate   DateTime
+  createdAt            DateTime @default(now())
+
+  reservations Reservation[]
+}
+
+model Reservation {
+  id         Int       @id @default(autoincrement())
+  startDate  DateTime
+  endDate    DateTime
+  status     String    @default("pending")
+  totalPrice Float
+  returnedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  car        Car      @relation(fields: [carId], references: [id])
+  carId      Int
+  customer   Customer @relation(fields: [customerId], references: [id])
+  customerId Int
+}
