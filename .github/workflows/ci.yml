@@ -40,6 +40,8 @@ jobs:
 
       - run: npx prisma generate
 
+      - run: npm run lint
+
       - run: npm run test:unit
 
       - run: npx prisma migrate deploy
