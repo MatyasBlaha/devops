@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:unit": "jest --testPathPatterns=tests/unit",
+    "test:integration": "jest --testPathPatterns=tests/integration"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,7 @@
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "jest": "^30.3.0",
     "prisma": "^7.5.0"
   }
 }

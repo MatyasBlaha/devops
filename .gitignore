@@ -2,5 +2,7 @@
 .idea/
 node_modules/
 .env
+.claude/
+PLAN.md
 
 /src/generated/prisma
