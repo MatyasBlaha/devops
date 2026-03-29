@@ -5,6 +5,14 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - production
 
 jobs:
   deploy-staging:
@@ -29,4 +37,28 @@ jobs:
       - name: Smoke test
         run: |
           APP_URL=$(kubectl get ingress car-rental-ingress -n car-rental-staging -o jsonpath='{.spec.rules[0].host}')
+          curl -sf --retry 5 --retry-delay 5 "http://$APP_URL/health" || exit 1
+
+  deploy-production:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to production
+        run: |
+          kubectl apply -k k8s/production
+          kubectl rollout status deployment/car-rental-app -n car-rental-production --timeout=120s
+
+      - name: Smoke test
+        run: |
+          APP_URL=$(kubectl get ingress car-rental-ingress -n car-rental-production -o jsonpath='{.spec.rules[0].host}')
           curl -sf --retry 5 --retry-delay 5 "http://$APP_URL/health" || exit 1
