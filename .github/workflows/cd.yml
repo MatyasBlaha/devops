@@ -1,0 +1,32 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy-staging:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Configure kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+
+      - name: Deploy to staging
+        run: |
+          kubectl apply -k k8s/staging
+          kubectl rollout status deployment/car-rental-app -n car-rental-staging --timeout=120s
+
+      - name: Smoke test
+        run: |
+          APP_URL=$(kubectl get ingress car-rental-ingress -n car-rental-staging -o jsonpath='{.spec.rules[0].host}')
+          curl -sf --retry 5 --retry-delay 5 "http://$APP_URL/health" || exit 1
