@@ -3,7 +3,7 @@ module.exports = {
   testPathIgnorePatterns: ['/node_modules/'],
   coverageDirectory: 'coverage',
   collectCoverageFrom: ['src/**/*.js', '!src/server.js', '!src/generated/**'],
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 70,
       functions: 70,
