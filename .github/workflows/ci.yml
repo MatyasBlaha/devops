@@ -42,17 +42,13 @@ jobs:
 
       - run: npm run lint
 
-      - run: npm run test:unit -- --coverage
-        env:
-          JEST_JUNIT_OUTPUT_DIR: reports
-          JEST_JUNIT_OUTPUT_NAME: unit.xml
-
       - run: npx prisma migrate deploy
 
-      - run: npm run test:integration
+      - name: Test + Coverage
+        run: npx jest --coverage
         env:
           JEST_JUNIT_OUTPUT_DIR: reports
-          JEST_JUNIT_OUTPUT_NAME: integration.xml
+          JEST_JUNIT_OUTPUT_NAME: results.xml
 
       - uses: actions/upload-artifact@v4
         if: always()
