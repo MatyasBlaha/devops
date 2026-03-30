@@ -1,7 +1,9 @@
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL } },
+});
 const app = express();
 
 app.use(express.json());

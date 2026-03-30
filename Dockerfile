@@ -7,6 +7,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN npx prisma generate
 
 # --- production stage ---
@@ -19,9 +20,10 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY --from=build /app/src/generated/prisma ./src/generated/prisma
-COPY src ./src
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
+COPY prisma.config.ts ./
+COPY src ./src
 
 USER appuser
 
