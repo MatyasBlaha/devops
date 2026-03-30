@@ -1,4 +1,4 @@
-function createTestCar(overrides = {}) {
+export function createTestCar(overrides = {}) {
   return {
     id: 1,
     brand: 'Skoda',
@@ -11,5 +11,3 @@ function createTestCar(overrides = {}) {
     ...overrides,
   };
 }
-
-module.exports = { createTestCar };

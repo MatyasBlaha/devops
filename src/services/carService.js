@@ -1,4 +1,4 @@
-module.exports = function (prisma) {
+export default function (prisma) {
   async function getAll() {
     return prisma.car.findMany();
   }
@@ -29,4 +29,4 @@ module.exports = function (prisma) {
   }
 
   return { getAll, getById, create, update };
-};
+}

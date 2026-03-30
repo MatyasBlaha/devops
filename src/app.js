@@ -1,9 +1,9 @@
-const express = require('express');
-const { PrismaClient } = require('@prisma/client');
+import express from 'express';
+import { PrismaClient } from './generated/prisma/client.ts';
+import carServiceFactory from './services/carService.js';
+import carRoutesFactory from './routes/cars.js';
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: process.env.DATABASE_URL } },
-});
+const prisma = new PrismaClient();
 const app = express();
 
 app.use(express.json());
@@ -12,8 +12,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-const carService = require('./services/carService')(prisma);
-const carRoutes = require('./routes/cars')(carService);
+const carService = carServiceFactory(prisma);
+const carRoutes = carRoutesFactory(carService);
 app.use('/api/cars', carRoutes);
 
-module.exports = app;
+export default app;
