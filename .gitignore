@@ -6,3 +6,5 @@ node_modules/
 PLAN.md
 
 /src/generated/prisma
+coverage/
+junit.xml
