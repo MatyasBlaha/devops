@@ -1,7 +1,6 @@
 module.exports = {
   testMatch: ['**/tests/**/*.test.js'],
   testPathIgnorePatterns: ['/node_modules/'],
-  transform: {},
   coverageDirectory: 'coverage',
   collectCoverageFrom: ['src/**/*.js', '!src/server.js', '!src/generated/**'],
   coverageThreshold: {

@@ -1,8 +1,7 @@
-import express from 'express';
+const express = require('express');
+const router = express.Router();
 
-export default function (carService) {
-  const router = express.Router();
-
+module.exports = function (carService) {
   router.get('/', async (req, res) => {
     const cars = await carService.getAll();
     res.json(cars);
@@ -33,4 +32,4 @@ export default function (carService) {
   });
 
   return router;
-}
+};
