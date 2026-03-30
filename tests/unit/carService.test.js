@@ -1,6 +1,4 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { createTestCar } from '../helpers/testFactory.js';
-import carServiceFactory from '../../src/services/carService.js';
+const { createTestCar } = require('../helpers/testFactory');
 
 const mockPrisma = {
   car: {
@@ -11,7 +9,7 @@ const mockPrisma = {
   },
 };
 
-const carService = carServiceFactory(mockPrisma);
+const carService = require('../../src/services/carService')(mockPrisma);
 
 describe('CarService', () => {
   beforeEach(() => {

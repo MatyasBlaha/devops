@@ -4,12 +4,12 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "start": "node --experimental-strip-types src/server.js",
-    "dev": "node --experimental-strip-types --watch src/server.js",
-    "test": "NODE_OPTIONS='--experimental-vm-modules --experimental-strip-types' jest",
-    "test:unit": "NODE_OPTIONS='--experimental-vm-modules --experimental-strip-types' jest --testPathPatterns=tests/unit",
-    "test:integration": "NODE_OPTIONS='--experimental-vm-modules --experimental-strip-types' jest --testPathPatterns=tests/integration",
-    "lint": "eslint -c eslint.config.cjs"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest",
+    "test:unit": "jest --testPathPatterns=tests/unit",
+    "test:integration": "jest --testPathPatterns=tests/integration",
+    "lint": "eslint"
   },
   "repository": {
     "type": "git",
@@ -18,13 +18,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "module",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/MatyasBlaha/devops/issues"
   },
   "homepage": "https://github.com/MatyasBlaha/devops#readme",
   "dependencies": {
-    "@prisma/client": "^7.5.0",
+    "@prisma/client": "^6.0.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1"
   },
@@ -32,7 +32,7 @@
     "eslint": "^10.1.0",
     "jest": "^30.3.0",
     "jest-junit": "^16.0.0",
-    "prisma": "^7.5.0",
+    "prisma": "^6.0.0",
     "supertest": "^7.2.2"
   }
 }
