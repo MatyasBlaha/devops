@@ -1,5 +1,6 @@
-const request = require('supertest');
-const app = require('../../src/app');
+import { describe, it, expect } from '@jest/globals';
+import request from 'supertest';
+import app from '../../src/app.js';
 
 describe('GET /health', () => {
   it('should return status ok', async () => {

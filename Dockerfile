@@ -20,7 +20,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/src/generated/prisma ./src/generated/prisma
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 COPY src ./src
@@ -32,4 +32,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget -qO- http://localhost:3000/health || exit 1
 
-CMD ["node", "src/server.js"]
+CMD ["node", "--experimental-strip-types", "src/server.js"]

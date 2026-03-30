@@ -1,5 +1,8 @@
 module.exports = [
   {
+    ignores: ['coverage/**', 'src/generated/**'],
+  },
+  {
     files: ['src/**/*.js'],
     rules: {
       'no-unused-vars': 'error',
@@ -9,13 +12,9 @@ module.exports = [
     },
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      sourceType: 'module',
       globals: {
-        require: 'readonly',
-        module: 'readonly',
-        exports: 'readonly',
         process: 'readonly',
-        __dirname: 'readonly',
         console: 'readonly',
       },
     },

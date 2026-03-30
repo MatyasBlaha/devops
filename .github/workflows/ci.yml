@@ -47,6 +47,7 @@ jobs:
       - name: Test + Coverage
         run: npx jest --coverage
         env:
+          NODE_OPTIONS: '--experimental-vm-modules --experimental-strip-types'
           JEST_JUNIT_OUTPUT_DIR: reports
           JEST_JUNIT_OUTPUT_NAME: results.xml
 
