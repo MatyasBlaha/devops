@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-rental-app
+  labels:
+    app: car-rental-app
+spec:
+  selector:
+    app: car-rental-app
+  ports:
+    - port: 3000
+      targetPort: 3000

@@ -12,32 +12,49 @@ on:
         required: true
         type: choice
         options:
+          - staging
           - production
 
 jobs:
   deploy-staging:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     runs-on: ubuntu-latest
     environment: staging
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-      - name: Configure kubeconfig
-        run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+      - name: Create k3d cluster
+        run: k3d cluster create staging --wait
+
+      - name: Build and import Docker image
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.event.workflow_run.head_sha || github.sha }}"
+          docker build -t "$IMAGE" .
+          k3d image import "$IMAGE" -c staging
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Deploy to staging
         run: |
+          cd k8s/staging
+          kustomize edit set image "car-rental-app:latest=$IMAGE"
+          cd ../..
           kubectl apply -k k8s/staging
           kubectl rollout status deployment/car-rental-app -n car-rental-staging --timeout=120s
 
       - name: Smoke test
         run: |
-          APP_URL=$(kubectl get ingress car-rental-ingress -n car-rental-staging -o jsonpath='{.spec.rules[0].host}')
-          curl -sf --retry 5 --retry-delay 5 "http://$APP_URL/health" || exit 1
+          kubectl port-forward svc/car-rental-app 3000:3000 -n car-rental-staging &
+          sleep 5
+          curl -sf --retry 3 --retry-delay 5 http://localhost:3000/health
+          echo "Staging smoke test passed!"
 
   deploy-production:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
@@ -47,18 +64,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Install k3d
+        run: curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-      - name: Configure kubeconfig
-        run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+      - name: Create k3d cluster
+        run: k3d cluster create production --wait
+
+      - name: Build and import Docker image
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          k3d image import "$IMAGE" -c production
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Deploy to production
         run: |
+          cd k8s/production
+          kustomize edit set image "car-rental-app:latest=$IMAGE"
+          cd ../..
           kubectl apply -k k8s/production
           kubectl rollout status deployment/car-rental-app -n car-rental-production --timeout=120s
 
       - name: Smoke test
         run: |
-          APP_URL=$(kubectl get ingress car-rental-ingress -n car-rental-production -o jsonpath='{.spec.rules[0].host}')
-          curl -sf --retry 5 --retry-delay 5 "http://$APP_URL/health" || exit 1
+          kubectl port-forward svc/car-rental-app 3000:3000 -n car-rental-production &
+          sleep 5
+          curl -sf --retry 3 --retry-delay 5 http://localhost:3000/health
+          echo "Production smoke test passed!"
