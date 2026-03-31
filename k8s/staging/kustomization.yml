@@ -8,18 +8,20 @@ resources:
   - ../base
 
 patches:
-  - target:
+  - patch: |
+      apiVersion: apps/v1
       kind: Deployment
-      name: car-rental-app
-    patch: |
-      - op: replace
-        path: /spec/replicas
-        value: 1
-      - op: replace
-        path: /spec/template/spec/containers/0/env/-
-        value:
-          name: LOG_LEVEL
-          value: debug
+      metadata:
+        name: car-rental-app
+      spec:
+        replicas: 1
+        template:
+          spec:
+            containers:
+              - name: car-rental-app
+                env:
+                  - name: LOG_LEVEL
+                    value: debug
 
   - target:
       kind: Ingress
