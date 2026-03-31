@@ -16,6 +16,10 @@ module.exports = function (prisma) {
     if (data.category && !['standard', 'premium'].includes(data.category)) {
       throw new Error('category must be standard or premium');
     }
+    const currentYear = new Date().getFullYear();
+    if (data.year !== undefined && data.year > currentYear) {
+      throw new Error('year cannot be in the future');
+    }
 
     return prisma.car.create({ data });
   }
