@@ -83,6 +83,12 @@ describe('CarService', () => {
 
       await expect(carService.create(input)).rejects.toThrow('category must be standard or premium');
     });
+
+    it('should reject year in the future', async () => {
+      const input = { brand: 'Skoda', model: 'Octavia', year: 2030, pricePerDay: 1000 };
+
+      await expect(carService.create(input)).rejects.toThrow('year cannot be in the future');
+    });
   });
 
   describe('update', () => {
