@@ -24,5 +24,17 @@ module.exports = function (prisma) {
     return prisma.customer.create({ data });
   }
 
-  return { create };
+  async function getAll() {
+    return [];
+  }
+
+  async function getById() {
+    return null;
+  }
+
+  async function update(id, data) {
+    return prisma.customer.update({ where: { id }, data });
+  }
+
+  return { create, getAll, getById, update };
 };

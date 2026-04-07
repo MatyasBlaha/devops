@@ -112,4 +112,55 @@ describe('CustomerService', () => {
       await expect(customerService.create(input)).rejects.toThrow('email already exists');
     });
   });
+
+  describe('getAll', () => {
+    it('should return all customers', async () => {
+      const customers = [createTestCustomer(), createTestCustomer({ id: 2, name: 'Eva Qwer' })];
+      mockPrisma.customer.findMany.mockResolvedValue(customers);
+
+      const result = await customerService.getAll();
+
+      expect(result).toHaveLength(2);
+      expect(mockPrisma.customer.findMany).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('getById', () => {
+    it('should return customer by id', async () => {
+      const customer = createTestCustomer();
+      mockPrisma.customer.findUnique.mockResolvedValue(customer);
+
+      const result = await customerService.getById(1);
+
+      expect(result).toEqual(customer);
+      expect(mockPrisma.customer.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
+    });
+
+    it('should return null when customer does not exist', async () => {
+      mockPrisma.customer.findUnique.mockResolvedValue(null);
+
+      const result = await customerService.getById(999);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('update', () => {
+    it('should update customer fields', async () => {
+      const updated = createTestCustomer({ name: 'Zmeneno Jmeno' });
+      mockPrisma.customer.update.mockResolvedValue(updated);
+
+      const result = await customerService.update(1, { name: 'Zmeneno Jmeno' });
+
+      expect(result.name).toBe('Zmeneno Jmeno');
+      expect(mockPrisma.customer.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { name: 'Zmeneno Jmeno' },
+      });
+    });
+
+    it('should reject invalid email format on update', async () => {
+      await expect(customerService.update(1, { email: 'spatny' })).rejects.toThrow('email format is invalid');
+    });
+  });
 });
