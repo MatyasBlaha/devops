@@ -25,14 +25,17 @@ module.exports = function (prisma) {
   }
 
   async function getAll() {
-    return [];
+    return prisma.customer.findMany();
   }
 
-  async function getById() {
-    return null;
+  async function getById(id) {
+    return prisma.customer.findUnique({ where: { id } });
   }
 
   async function update(id, data) {
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      throw new Error('email format is invalid');
+    }
     return prisma.customer.update({ where: { id }, data });
   }
 
