@@ -25,4 +25,19 @@ function createTestCustomer(overrides = {}) {
   };
 }
 
-module.exports = { createTestCar, createTestCustomer };
+function createTestReservation(overrides = {}) {
+  return {
+    id: 1,
+    startDate: new Date('2026-05-01'),
+    endDate: new Date('2026-05-04'),
+    status: 'pending',
+    totalPrice: 3000,
+    returnedAt: null,
+    carId: 1,
+    customerId: 1,
+    createdAt: new Date('2025-01-01'),
+    ...overrides,
+  };
+}
+
+module.exports = { createTestCar, createTestCustomer, createTestReservation };
