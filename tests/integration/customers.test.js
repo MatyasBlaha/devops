@@ -9,7 +9,7 @@ describe('POST /api/customers', () => {
         name: 'Tomas Qwer',
         email: 'tomas@qwer.com',
         driversLicenseNumber: 'ZZ55555',
-        driversLicenseDate: '2020-03-10',
+        driversLicenseDate: '2020-03-10T00:00:00.000Z',
       });
 
     expect(res.status).toBe(201);
