@@ -14,4 +14,8 @@ const carService = require('./services/carService')(prisma);
 const carRoutes = require('./routes/cars')(carService);
 app.use('/api/cars', carRoutes);
 
+const customerService = require('./services/customerService')(prisma);
+const customerRoutes = require('./routes/customers')(customerService);
+app.use('/api/customers', customerRoutes);
+
 module.exports = app;
