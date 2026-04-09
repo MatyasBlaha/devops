@@ -39,5 +39,44 @@ module.exports = function (prisma) {
     });
   }
 
-  return { create };
+  const ALLOWED_TRANSITIONS = {
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['active'],
+    active: ['completed'],
+    completed: [],
+    cancelled: [],
+  };
+
+  async function transition(id, toStatus) {
+    const reservation = await prisma.reservation.findUnique({ where: { id } });
+    if (!reservation) throw new Error('reservation not found');
+
+    const allowed = ALLOWED_TRANSITIONS[reservation.status] || [];
+    if (!allowed.includes(toStatus)) {
+      throw new Error(`cannot transition from ${reservation.status} to ${toStatus}`);
+    }
+
+    return prisma.reservation.update({
+      where: { id },
+      data: { status: toStatus },
+    });
+  }
+
+  async function confirm(id) {
+    return transition(id, 'confirmed');
+  }
+
+  async function activate(id) {
+    return transition(id, 'active');
+  }
+
+  async function complete(id) {
+    return transition(id, 'completed');
+  }
+
+  async function cancel(id) {
+    return transition(id, 'cancelled');
+  }
+
+  return { create, confirm, activate, complete, cancel };
 };
