@@ -117,4 +117,106 @@ describe('ReservationService', () => {
       })).rejects.toThrow('endDate must be after startDate');
     });
   });
+
+  describe('confirm', () => {
+    it('should confirm a pending reservation', async () => {
+      const reservation = createTestReservation({ status: 'pending' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({ ...reservation, status: 'confirmed' });
+
+      const result = await reservationService.confirm(1);
+
+      expect(result.status).toBe('confirmed');
+      expect(mockPrisma.reservation.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { status: 'confirmed' },
+      });
+    });
+
+    it('should reject confirming an active reservation', async () => {
+      const reservation = createTestReservation({ status: 'active' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.confirm(1))
+        .rejects.toThrow('cannot transition from active to confirmed');
+    });
+  });
+
+  describe('activate', () => {
+    it('should activate a confirmed reservation', async () => {
+      const reservation = createTestReservation({ status: 'confirmed' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({ ...reservation, status: 'active' });
+
+      const result = await reservationService.activate(1);
+
+      expect(result.status).toBe('active');
+    });
+
+    it('should reject activating a pending reservation', async () => {
+      const reservation = createTestReservation({ status: 'pending' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.activate(1))
+        .rejects.toThrow('cannot transition from pending to active');
+    });
+  });
+
+  describe('complete', () => {
+    it('should complete an active reservation', async () => {
+      const reservation = createTestReservation({ status: 'active' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({ ...reservation, status: 'completed' });
+
+      const result = await reservationService.complete(1);
+
+      expect(result.status).toBe('completed');
+    });
+
+    it('should reject completing a pending reservation', async () => {
+      const reservation = createTestReservation({ status: 'pending' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.complete(1))
+        .rejects.toThrow('cannot transition from pending to completed');
+    });
+  });
+
+  describe('cancel', () => {
+    it('should cancel a pending reservation', async () => {
+      const reservation = createTestReservation({ status: 'pending' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({ ...reservation, status: 'cancelled' });
+
+      const result = await reservationService.cancel(1);
+
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('should cancel a confirmed reservation', async () => {
+      const reservation = createTestReservation({ status: 'confirmed' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({ ...reservation, status: 'cancelled' });
+
+      const result = await reservationService.cancel(1);
+
+      expect(result.status).toBe('cancelled');
+    });
+
+    it('should reject cancelling an active reservation', async () => {
+      const reservation = createTestReservation({ status: 'active' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.cancel(1))
+        .rejects.toThrow('cannot transition from active to cancelled');
+    });
+
+    it('should reject cancelling a completed reservation', async () => {
+      const reservation = createTestReservation({ status: 'completed' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.cancel(1))
+        .rejects.toThrow('cannot transition from completed to cancelled');
+    });
+  });
 });
