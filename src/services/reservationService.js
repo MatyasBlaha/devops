@@ -1,4 +1,5 @@
 const priceCalculator = require('./priceCalculator');
+const { validateTransition } = require('./stateMachine');
 
 module.exports = function (prisma) {
   async function create(data) {
@@ -39,22 +40,11 @@ module.exports = function (prisma) {
     });
   }
 
-  const ALLOWED_TRANSITIONS = {
-    pending: ['confirmed', 'cancelled'],
-    confirmed: ['active', 'cancelled'],
-    active: ['completed'],
-    completed: [],
-    cancelled: [],
-  };
-
   async function transition(id, toStatus) {
     const reservation = await prisma.reservation.findUnique({ where: { id } });
     if (!reservation) throw new Error('reservation not found');
 
-    const allowed = ALLOWED_TRANSITIONS[reservation.status] || [];
-    if (!allowed.includes(toStatus)) {
-      throw new Error(`cannot transition from ${reservation.status} to ${toStatus}`);
-    }
+    validateTransition(reservation.status, toStatus);
 
     return prisma.reservation.update({
       where: { id },
