@@ -41,7 +41,7 @@ module.exports = function (prisma) {
 
   const ALLOWED_TRANSITIONS = {
     pending: ['confirmed', 'cancelled'],
-    confirmed: ['active'],
+    confirmed: ['active', 'cancelled'],
     active: ['completed'],
     completed: [],
     cancelled: [],
