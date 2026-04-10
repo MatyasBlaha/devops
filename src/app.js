@@ -22,4 +22,8 @@ const reservationService = require('./services/reservationService')(prisma);
 const reservationRoutes = require('./routes/reservations')(reservationService);
 app.use('/api/reservations', reservationRoutes);
 
+app.use((err, req, res, _next) => {
+  res.status(400).json({ error: err.message });
+});
+
 module.exports = app;
