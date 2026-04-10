@@ -219,4 +219,75 @@ describe('ReservationService', () => {
         .rejects.toThrow('cannot transition from completed to cancelled');
     });
   });
+
+  describe('returnCar', () => {
+    it('should return a car for an active reservation on time', async () => {
+      const reservation = createTestReservation({
+        status: 'active',
+        endDate: new Date('2026-05-10'),
+        totalPrice: 5000,
+      });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+      mockPrisma.reservation.update.mockResolvedValue({
+        ...reservation,
+        status: 'completed',
+        returnedAt: new Date('2026-05-09'),
+        totalPrice: 5000,
+      });
+
+      const result = await reservationService.returnCar(1, new Date('2026-05-09'));
+
+      expect(result.status).toBe('completed');
+      expect(result.totalPrice).toBe(5000);
+    });
+
+    it('should add 50% surcharge per late day', async () => {
+      const reservation = createTestReservation({
+        status: 'active',
+        endDate: new Date('2026-05-04'),
+        totalPrice: 3000,
+        startDate: new Date('2026-05-01'),
+      });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      const car = createTestCar({ pricePerDay: 1000 });
+      mockPrisma.car.findUnique.mockResolvedValue(car);
+
+      mockPrisma.reservation.update.mockResolvedValue({
+        ...reservation,
+        status: 'completed',
+        returnedAt: new Date('2026-05-06'),
+        totalPrice: 6000,
+      });
+
+      const result = await reservationService.returnCar(1, new Date('2026-05-06'));
+
+      expect(result.status).toBe('completed');
+      expect(result.totalPrice).toBe(6000);
+      expect(mockPrisma.reservation.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          status: 'completed',
+          returnedAt: new Date('2026-05-06'),
+          totalPrice: 6000,
+        },
+      });
+    });
+
+    it('should reject returning a pending reservation', async () => {
+      const reservation = createTestReservation({ status: 'pending' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.returnCar(1, new Date()))
+        .rejects.toThrow('can only return active reservations');
+    });
+
+    it('should reject returning a completed reservation', async () => {
+      const reservation = createTestReservation({ status: 'completed' });
+      mockPrisma.reservation.findUnique.mockResolvedValue(reservation);
+
+      await expect(reservationService.returnCar(1, new Date()))
+        .rejects.toThrow('can only return active reservations');
+    });
+  });
 });
