@@ -68,5 +68,29 @@ module.exports = function (prisma) {
     return transition(id, 'cancelled');
   }
 
-  return { create, confirm, activate, complete, cancel };
+  async function returnCar(id, returnDate) {
+    const reservation = await prisma.reservation.findUnique({ where: { id } });
+    if (!reservation) throw new Error('reservation not found');
+    if (reservation.status !== 'active') throw new Error('can only return active reservations');
+
+    let totalPrice = reservation.totalPrice;
+
+    const endDate = new Date(reservation.endDate);
+    if (returnDate > endDate) {
+      const car = await prisma.car.findUnique({ where: { id: reservation.carId } });
+      const lateDays = Math.ceil((returnDate - endDate) / (1000 * 60 * 60 * 24));
+      totalPrice += lateDays * car.pricePerDay * 1.5;
+    }
+
+    return prisma.reservation.update({
+      where: { id },
+      data: {
+        status: 'completed',
+        returnedAt: returnDate,
+        totalPrice,
+      },
+    });
+  }
+
+  return { create, confirm, activate, complete, cancel, returnCar };
 };
