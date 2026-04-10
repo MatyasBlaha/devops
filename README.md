@@ -121,6 +121,18 @@ Co se netestuje:
 - `server.js` — jen `app.listen()`, nema zadnou logiku
 - Routes nemaji 100 % — nektere vetve (PUT endpointy) se pokryjou az integracnimi testy s DB v CI
 
+### TDD postup
+
+Domenova logika vznikala v cyklu red-green-refactor. Typicky postup na priklade reservation state machine:
+
+1. **RED** — napsat test na stavovy prechod (`test: add reservation states`), test failuje protoze service jeste nema logiku
+2. **GREEN** — napsat minimalní implementaci (`feat: add reservation states`), testy prochazi
+3. **REFACTOR** — vycistit kod, extrahovat state machine do vlastniho modulu (`refactor: extract states reservation`)
+
+Stejny postup u customer service (nejdriv testy na validaci RP, pak implementace, pak extrakce validatoru do `utils/validators.js`) a u price calculatoru.
+
+Ne vsechny commity jsou striktne 1:1 red/green — nekdy jsem spojil test + implementaci do jednoho commitu kdyz to bylo male. Ale refaktory jsou vzdy samostatne.
+
 ---
 
 ## CI/CD
