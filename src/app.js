@@ -18,4 +18,8 @@ const customerService = require('./services/customerService')(prisma);
 const customerRoutes = require('./routes/customers')(customerService);
 app.use('/api/customers', customerRoutes);
 
+const reservationService = require('./services/reservationService')(prisma);
+const reservationRoutes = require('./routes/reservations')(reservationService);
+app.use('/api/reservations', reservationRoutes);
+
 module.exports = app;
