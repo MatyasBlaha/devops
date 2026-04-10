@@ -3,12 +3,13 @@ const app = require('../../src/app');
 
 describe('POST /api/customers', () => {
   it('should create a customer', async () => {
+    const unique = Date.now();
     const res = await request(app)
       .post('/api/customers')
       .send({
         name: 'Tomas Qwer',
-        email: 'tomas@qwer.com',
-        driversLicenseNumber: 'ZZ55555',
+        email: `tomas+${unique}@qwer.com`,
+        driversLicenseNumber: `ZZ${unique}`,
         driversLicenseDate: '2020-03-10T00:00:00.000Z',
       });
 
