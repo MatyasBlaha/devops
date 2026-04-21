@@ -34,6 +34,5 @@ patches:
 secretGenerator:
   - name: db-secret
     behavior: replace
-    literals:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres-staging
+    envs:
+      - secrets.env

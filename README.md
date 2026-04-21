@@ -31,6 +31,19 @@ Semestralni prace z predmetu DevOps. Jednoduche REST API pro spravu aut v autopu
 | PATCH | /api/reservations/:id/cancel | Zruseni rezervace |
 | PATCH | /api/reservations/:id/return | Vraceni auta |
 
+### Error handling a HTTP kody
+
+Error middleware (`src/app.js`) cte `err.statusCode` z doménových error trid (`src/utils/errors.js`):
+
+| Trida | HTTP | Kdy |
+|-------|------|-----|
+| `ValidationError` | 400 | chybi povinne pole, format emailu, zaporna cena, ... |
+| `NotFoundError` | 404 | nenalezena entita (car, customer, reservation) |
+| `ConflictError` | 409 | duplicitni email, auto neni dostupne, kolize rezervace |
+| `InvalidStateError` | 422 | neplatny prechod stavu rezervace |
+
+Kazda odpoved chyby ma format `{ "error": "<message>" }`.
+
 ---
 
 ## Domena a pravidla
@@ -81,6 +94,41 @@ Dulezite soubory:
 - `priceCalculator.js` — vypocet ceny s pravidly
 - `stateMachine.js` — povolene stavove prechody
 - `validators.js` — spolecne validace (email, datum, vek RP)
+- `errors.js` — domenove error tridy s HTTP status kody
+
+### Diagram komponent a datovych toku
+
+```mermaid
+flowchart LR
+  client["HTTP klient"]
+  ingress["Ingress (nginx)"]
+  svc["Service: car-rental-app"]
+  app["Deployment: car-rental-app<br/>(Node 22 + Express)"]
+  pgsvc["Service: postgres"]
+  pg[("StatefulSet: postgres<br/>(PVC)")]
+  ghcr[("ghcr.io<br/>Docker registry")]
+
+  client -->|"HTTPS :80"| ingress
+  ingress -->|":3000"| svc
+  svc --> app
+  app -->|"DATABASE_URL"| pgsvc
+  pgsvc --> pg
+  ghcr -.->|"image pull"| app
+
+  subgraph app_internal["Uvnitr Deployment podu"]
+    direction TB
+    routes["routes/"] --> services["services/"]
+    services --> prisma["@prisma/client"]
+    routes -.->|"chyba"| middleware["error middleware<br/>(statusCode mapping)"]
+  end
+  app --- app_internal
+```
+
+Popis toku:
+- Request prichazi pres Ingress na Service, ktery ho routne do Deploymentu
+- V aplikaci: `routes → services → prisma → PostgreSQL`
+- Chyby z services (`NotFoundError`, `ConflictError`, `ValidationError`, `InvalidStateError`) prochazi error middlewarem, ktery je mapuje na spravny HTTP kod
+- Secrets (`db-secret`) a config (`db-config`) se mountuji do podu jako env promenne
 
 ---
 
@@ -115,11 +163,22 @@ it('should reject reservation for car in maintenance', async () => {
 
 ### Coverage
 
-Mereni pres `jest --coverage`, threshold 70 % (lines, branches, functions, statements) v `jest.config.js`. Report se uploaduje jako artefakt v CI.
+Mereni pres `jest --coverage`, threshold **70 %** (lines, branches, functions, statements) v `jest.config.js`. Report se uploaduje jako artefakt v CI (`coverage/`).
 
-Co se netestuje:
-- `server.js` — jen `app.listen()`, nema zadnou logiku
-- Routes nemaji 100 % — nektere vetve (PUT endpointy) se pokryjou az integracnimi testy s DB v CI
+Aktualni cisla (unit + integration v CI):
+
+| Vrstva | Lines | Branches | Poznamka |
+|--------|-------|----------|----------|
+| `src/services/` | ~98 % | ~95 % | pokryto unit testy s mockovanou Prismou |
+| `src/utils/` | 100 % | 100 % | validators, errors |
+| `src/routes/` | ~90 % | ~80 % | pokryto integracnimi testy se Supertestem |
+| `src/app.js` | 100 % | 100 % | pokryto integracnimi testy |
+
+Co se **vedome netestuje** (`collectCoverageFrom` exclude v `jest.config.js`):
+
+- `src/server.js` — jen `app.listen()` + `process.env.PORT`, zadna logika
+- `src/generated/**` — Prisma klient, generovany kod
+- Nektere defensivni vetve v prisma-specificke logice (napr. `car.findUnique` null check uvnitr `returnCar` uz po validaci stavu) — nejsou dosazitelne pres verejne API
 
 ### TDD postup
 
@@ -169,10 +228,22 @@ API pak bezi na `http://localhost:3000`.
 Manifesty v `k8s/`, rozdelene pres Kustomize na base a overlaye:
 
 - `base/` — Deployment, Service, StatefulSet (postgres), ConfigMap, Secret, Ingress
-- `staging/` — 1 replika, LOG_LEVEL=debug, namespace car-rental-staging
-- `production/` — 2 repliky, vyssi resource limity, LOG_LEVEL=info, namespace car-rental-production
+- `staging/` — overlay pro staging prostredi
+- `production/` — overlay pro production prostredi
 
-Obe prostredi maji vlastni ingress host, resource limity a secretGenerator.
+### Rozdily mezi prostredimi
+
+| Konfigurace | Staging | Production |
+|-------------|---------|------------|
+| Namespace | `car-rental-staging` | `car-rental-production` |
+| Replicas (app) | 1 | 2 |
+| CPU request | 100m (base) | 200m (patch) |
+| Memory request | 128Mi (base) | 256Mi (patch) |
+| Memory limit | 256Mi (base) | 512Mi (patch) |
+| `LOG_LEVEL` | `debug` | `info` |
+| Ingress host | `staging.car-rental.local` | `car-rental.local` |
+| Deploy trigger | automaticky po CI | manualne (`workflow_dispatch`) |
+| Secrets zdroj | `k8s/staging/secrets.env` (gitignored) | `k8s/production/secrets.env` (gitignored) |
 
 ### Proc Kustomize
 
@@ -191,9 +262,21 @@ V jest configu je nastaveny coverage threshold na 70% — kdyz nekdo prida kod b
 
 ## Secrets
 
-- `secret.yml` v base je jen sablona (CHANGE_ME), skutecne hodnoty se tam nedavaji
-- v CI se pouziva GITHUB_TOKEN pres GitHub Secrets
-- lokalne `.env` soubor (v .gitignore), v repu je `.env.example` jako vzor
+V repozitari nesmi byt zadne plaintext heslo. Reseni:
+
+- `k8s/base/secret.yml` je jen sablona s `CHANGE_ME`, reserves nahrazuje overlay
+- Overlays (`k8s/staging`, `k8s/production`) pouzivaji `secretGenerator` s odkazem na `secrets.env` soubor, ktery je v `.gitignore` — v repu je pouze `secrets.env.example` bez realnych hodnot
+- V CD workflow se `secrets.env` generuje za behu z GitHub Secrets (`STAGING_DB_USER`, `STAGING_DB_PASSWORD`, `PRODUCTION_DB_USER`, `PRODUCTION_DB_PASSWORD`) tesne pred `kubectl apply`
+- Pro lokalni vyvoj je `.env` soubor (take gitignored), sablona je `.env.example`
+- Autentizace do `ghcr.io` v CI pres `GITHUB_TOKEN` z GitHub Secrets
+
+### Lokalni priprava k8s secretu
+
+```bash
+cp k8s/staging/secrets.env.example k8s/staging/secrets.env
+# v souboru nahradit REPLACE_ME skutecnym heslem
+kubectl apply -k k8s/staging
+```
 
 ## Spusteni lokalne
 

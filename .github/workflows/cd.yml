@@ -41,6 +41,16 @@ jobs:
           k3d image import "$IMAGE" -c staging
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
+      - name: Write staging secrets from GitHub Secrets
+        env:
+          STAGING_DB_USER: ${{ secrets.STAGING_DB_USER }}
+          STAGING_DB_PASSWORD: ${{ secrets.STAGING_DB_PASSWORD }}
+        run: |
+          cat > k8s/staging/secrets.env <<EOF
+          POSTGRES_USER=${STAGING_DB_USER:-postgres}
+          POSTGRES_PASSWORD=${STAGING_DB_PASSWORD:-postgres}
+          EOF
+
       - name: Deploy to staging
         run: |
           cd k8s/staging
@@ -76,6 +86,16 @@ jobs:
           docker build -t "$IMAGE" .
           k3d image import "$IMAGE" -c production
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Write production secrets from GitHub Secrets
+        env:
+          PRODUCTION_DB_USER: ${{ secrets.PRODUCTION_DB_USER }}
+          PRODUCTION_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+        run: |
+          cat > k8s/production/secrets.env <<EOF
+          POSTGRES_USER=${PRODUCTION_DB_USER:-postgres}
+          POSTGRES_PASSWORD=${PRODUCTION_DB_PASSWORD:-postgres}
+          EOF
 
       - name: Deploy to production
         run: |
