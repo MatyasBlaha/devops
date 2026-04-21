@@ -8,3 +8,6 @@ PLAN.md
 /src/generated/prisma
 coverage/
 junit.xml
+
+k8s/staging/secrets.env
+k8s/production/secrets.env
