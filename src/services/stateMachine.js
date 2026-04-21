@@ -1,3 +1,5 @@
+const { InvalidStateError } = require('../utils/errors');
+
 const ALLOWED_TRANSITIONS = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['active', 'cancelled'],
@@ -9,7 +11,7 @@ const ALLOWED_TRANSITIONS = {
 function validateTransition(fromStatus, toStatus) {
   const allowed = ALLOWED_TRANSITIONS[fromStatus] || [];
   if (!allowed.includes(toStatus)) {
-    throw new Error(`cannot transition from ${fromStatus} to ${toStatus}`);
+    throw new InvalidStateError(`cannot transition from ${fromStatus} to ${toStatus}`);
   }
 }
 
