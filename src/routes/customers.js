@@ -1,5 +1,6 @@
 const express = require('express');
 const asyncHandler = require('../utils/asyncHandler');
+const { NotFoundError } = require('../utils/errors');
 const router = express.Router();
 
 module.exports = function (customerService) {
@@ -10,7 +11,7 @@ module.exports = function (customerService) {
 
   router.get('/:id', asyncHandler(async (req, res) => {
     const customer = await customerService.getById(Number(req.params.id));
-    if (!customer) return res.status(404).json({ error: 'Customer not found' });
+    if (!customer) throw new NotFoundError('customer not found');
     res.json(customer);
   }));
 
