@@ -4,6 +4,7 @@ node_modules/
 .env
 .claude/
 PLAN.md
+OBHAJOBA.md
 
 /src/generated/prisma
 coverage/
